@@ -3,6 +3,9 @@
 # Instala/atualiza o WezTerm e sincroniza a configuração deste repositório
 # em ~/.config/wezterm (usuário atual).
 #
+# Distros: Arch/Manjaro, Debian/Ubuntu/Mint, Fedora, openSUSE
+#          (outras: Flatpak, se disponível)
+#
 # Uso: ./setup.sh            -> git pull + instala pacotes faltantes + aplica config
 #      ./setup.sh --no-pull  -> pula o git pull
 
@@ -13,7 +16,9 @@ set -e
 # ========================================
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEST_DIR="$HOME/.config/wezterm"
-PACKAGES="wezterm ttf-hack-nerd"
+FONT_NAME="Hack Nerd Font"
+FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Hack.tar.xz"
+FONT_DIR="$HOME/.local/share/fonts/HackNerdFont"
 
 # Arquivos do repositório que não vão para ~/.config/wezterm
 EXCLUDES=(--exclude .git --exclude .gitignore --exclude setup.sh
@@ -66,21 +71,103 @@ if [ "$1" != "--no-pull" ] && [ -d "$SRC_DIR/.git" ]; then
 fi
 
 # ========================================
-# 2. Instalar pacotes faltantes
+# 2. Instalar dependências, WezTerm e fonte
 # ========================================
-if command -v pacman >/dev/null; then
-    MISSING=""
-    for pkg in $PACKAGES; do
-        pacman -Q "$pkg" >/dev/null 2>&1 || MISSING="$MISSING $pkg"
+# Família da distro a partir de /etc/os-release (ID e ID_LIKE)
+DISTRO=""
+if [ -r /etc/os-release ]; then
+    . /etc/os-release
+    for id in $ID $ID_LIKE; do
+        case "$id" in
+            arch|manjaro)               DISTRO=arch;   break ;;
+            debian|ubuntu)              DISTRO=debian; break ;;
+            fedora|rhel|centos)         DISTRO=fedora; break ;;
+            opensuse*|suse|sles)        DISTRO=suse;   break ;;
+        esac
     done
-    if [ -n "$MISSING" ]; then
-        info "Instalando pacotes:$MISSING..."
-        sudo pacman -S --needed --noconfirm $MISSING
-    else
-        info "Pacotes já instalados: $PACKAGES"
+fi
+info "Distro detectada: ${PRETTY_NAME:-desconhecida} (${DISTRO:-sem suporte})"
+
+# Instala pacotes com o gerenciador da distro
+pkg_install() {
+    case "$DISTRO" in
+        arch)   sudo pacman -S --needed --noconfirm "$@" ;;
+        debian) sudo apt-get install -y "$@" ;;
+        fedora) sudo dnf install -y "$@" ;;
+        suse)   sudo zypper --non-interactive install "$@" ;;
+        *)      return 1 ;;
+    esac
+}
+
+# Ferramentas usadas pelo setup e pelos scripts do footer
+for cmd in rsync curl tar xz; do
+    if ! command -v "$cmd" >/dev/null; then
+        pkg="$cmd"
+        [ "$cmd" = xz ] && [ "$DISTRO" = debian ] && pkg=xz-utils
+        info "Instalando $pkg..."
+        pkg_install "$pkg" || { error "Instale '$pkg' manualmente"; exit 1; }
     fi
+done
+
+install_flatpak() {
+    if command -v flatpak >/dev/null; then
+        warn "Instalando via Flatpak (scripts do footer podem não funcionar no sandbox)"
+        flatpak install -y flathub org.wezfurlong.wezterm
+    else
+        warn "Instale o WezTerm manualmente: https://wezterm.org/install/linux.html"
+        return 1
+    fi
+}
+
+# --- WezTerm ---
+if command -v wezterm >/dev/null; then
+    info "WezTerm já instalado: $(wezterm --version)"
 else
-    warn "pacman não encontrado; instale manualmente: ${PACKAGES}"
+    info "Instalando WezTerm..."
+    install_native() {
+        case "$DISTRO" in
+            arch|suse)
+                pkg_install wezterm
+                ;;
+            debian)
+                # Repositório apt oficial do WezTerm
+                command -v gpg >/dev/null || pkg_install gnupg
+                curl -fsSL https://apt.fury.io/wez/gpg.key \
+                    | sudo gpg --yes --dearmor -o /usr/share/keyrings/wezterm-fury.gpg
+                echo 'deb [signed-by=/usr/share/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' \
+                    | sudo tee /etc/apt/sources.list.d/wezterm.list >/dev/null
+                sudo apt-get update
+                pkg_install wezterm
+                ;;
+            fedora)
+                # COPR oficial do WezTerm
+                sudo dnf install -y dnf-plugins-core 2>/dev/null || true
+                sudo dnf copr enable -y wezfurlong/wezterm-nightly
+                pkg_install wezterm
+                ;;
+            *)
+                return 1
+                ;;
+        esac
+    }
+    if ! install_native; then
+        [ -n "$DISTRO" ] && warn "Falha ao instalar pelo gerenciador da distro"
+        install_flatpak || true
+    fi
+fi
+
+# --- Fonte Hack Nerd Font ---
+if fc-list : family 2>/dev/null | grep -q "$FONT_NAME"; then
+    info "Fonte já instalada: $FONT_NAME"
+elif [ "$DISTRO" = arch ]; then
+    info "Instalando fonte: $FONT_NAME..."
+    pkg_install ttf-hack-nerd
+else
+    # Sem pacote nas outras distros: baixa do repositório do Nerd Fonts
+    info "Baixando fonte $FONT_NAME para $FONT_DIR..."
+    mkdir -p "$FONT_DIR"
+    curl -fsSL "$FONT_URL" | tar -xJ -C "$FONT_DIR"
+    fc-cache -f "$FONT_DIR" >/dev/null 2>&1 || true
 fi
 
 # ========================================
