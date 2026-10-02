@@ -32,7 +32,9 @@ function M.apply(config)
   -- ===== WINDOW =====
   config.window_background_opacity = 1.0
   config.window_padding = { left = 10, right = 10, top = 10, bottom = 10 }
-  config.window_decorations = 'RESIZE'
+  -- TITLE: native title bar with minimize/maximize/close buttons (without it,
+  -- X11 desktops like Cinnamon drop the whole title bar)
+  config.window_decorations = 'TITLE | RESIZE'
   config.enable_scroll_bar = false
 
   -- ===== INACTIVE PANES =====
