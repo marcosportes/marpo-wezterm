@@ -18,7 +18,7 @@ cd marpo-wezterm
 ./setup.sh
 ```
 
-`setup.sh` pulls the latest changes, installs WezTerm and Hack Nerd Font if missing, and syncs the config to `~/.config/wezterm`, backing up the old config if it differs.
+`setup.sh` pulls the latest changes, installs WezTerm if missing, and syncs the config to `~/.config/wezterm`, backing up the old config if it differs.
 
 Supported: Arch/Manjaro, Debian/Ubuntu/Mint, Fedora, openSUSE. Other distros fall back to Flatpak.
 
@@ -31,5 +31,6 @@ Use `./setup.sh --no-pull` to skip the `git pull`.
 - `lua/plugins/`: features (SSH picker, colored tabs, session restore)
 - `lua/custom/`: personal tweaks (`preferences.lua`)
 - `scripts/`: helper shell scripts
+- `fonts/`: bundled Hack Nerd Font Mono, loaded via `font_dirs` (no system install needed)
 
 Shortcuts: see [SHORTCUTS.md](SHORTCUTS.md).

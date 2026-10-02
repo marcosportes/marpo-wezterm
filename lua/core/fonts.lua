@@ -6,15 +6,25 @@ local prefs = require 'custom.preferences'
 
 local M = {}
 
+-- Hack only ships 400 and 700; asking for another weight works on recent
+-- WezTerm (closest match) but older builds show an error, so snap it here.
+local function snap(family, weight)
+  if family:find('Hack') then return weight < 550 and 400 or 700 end
+  return weight
+end
+
 local function font(weight, italic)
   return wezterm.font_with_fallback({
-    { family = prefs.font, weight = weight, italic = italic or false },
-    { family = 'Hack Nerd Font Mono', weight = weight, italic = italic or false },
+    { family = prefs.font, weight = snap(prefs.font, weight), italic = italic or false },
+    { family = 'Hack Nerd Font Mono', weight = snap('Hack', weight), italic = italic or false },
   })
 end
 
 function M.apply(config)
   wezterm.add_to_config_reload_watch_list(wezterm.config_dir .. '/lua/custom/preferences.lua')
+
+  -- Bundled Hack Nerd Font Mono: works without installing it on the system
+  config.font_dirs = { wezterm.config_dir .. '/fonts' }
 
   config.font = font(prefs.weight_normal)
   config.font_rules = {

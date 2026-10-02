@@ -16,9 +16,6 @@ set -e
 # ========================================
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEST_DIR="$HOME/.config/wezterm"
-FONT_NAME="Hack Nerd Font"
-FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Hack.tar.xz"
-FONT_DIR="$HOME/.local/share/fonts/HackNerdFont"
 
 # Arquivos do repositório que não vão para ~/.config/wezterm
 EXCLUDES=(--exclude .git --exclude .gitignore --exclude setup.sh
@@ -71,7 +68,8 @@ if [ "$1" != "--no-pull" ] && [ -d "$SRC_DIR/.git" ]; then
 fi
 
 # ========================================
-# 2. Instalar dependências, WezTerm e fonte
+# 2. Instalar dependências e WezTerm
+# (a fonte Hack Nerd Font vem em fonts/ e é carregada via font_dirs)
 # ========================================
 # Família da distro a partir de /etc/os-release (ID e ID_LIKE)
 DISTRO=""
@@ -100,12 +98,10 @@ pkg_install() {
 }
 
 # Ferramentas usadas pelo setup e pelos scripts do footer
-for cmd in rsync curl tar xz; do
+for cmd in rsync curl; do
     if ! command -v "$cmd" >/dev/null; then
-        pkg="$cmd"
-        [ "$cmd" = xz ] && [ "$DISTRO" = debian ] && pkg=xz-utils
-        info "Instalando $pkg..."
-        pkg_install "$pkg" || { error "Instale '$pkg' manualmente"; exit 1; }
+        info "Instalando $cmd..."
+        pkg_install "$cmd" || { error "Instale '$cmd' manualmente"; exit 1; }
     fi
 done
 
@@ -154,20 +150,6 @@ else
         [ -n "$DISTRO" ] && warn "Falha ao instalar pelo gerenciador da distro"
         install_flatpak || true
     fi
-fi
-
-# --- Fonte Hack Nerd Font ---
-if fc-list : family 2>/dev/null | grep -q "$FONT_NAME"; then
-    info "Fonte já instalada: $FONT_NAME"
-elif [ "$DISTRO" = arch ]; then
-    info "Instalando fonte: $FONT_NAME..."
-    pkg_install ttf-hack-nerd
-else
-    # Sem pacote nas outras distros: baixa do repositório do Nerd Fonts
-    info "Baixando fonte $FONT_NAME para $FONT_DIR..."
-    mkdir -p "$FONT_DIR"
-    curl -fsSL "$FONT_URL" | tar -xJ -C "$FONT_DIR"
-    fc-cache -f "$FONT_DIR" >/dev/null 2>&1 || true
 fi
 
 # ========================================
