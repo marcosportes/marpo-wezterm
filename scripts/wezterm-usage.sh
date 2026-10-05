@@ -1,20 +1,21 @@
-# Sourced by local-footer.sh and ssh-footer.sh (after their palette).
-# Shown at the far right of the footer, labeled "wezterm".
+# Sourced by local-footer.sh and ssh-footer.sh (after their palette and
+# footer-fit.sh). Shown at the far right of the footer, labeled "wezterm usage".
 # CPU and RAM used by WezTerm itself: the wezterm-gui process that runs the
 # footer (its parent), not the shells/programs inside the tabs. CPU is a share
 # of the whole machine (all cores), like the local footer's CPU.
 WEZ_PID=$PPID
 WEZ_COLOR=$(rgb '#d3869b')
-wez_prev_proc='' wez_prev_total='' wez_segment=''
+wez_prev_proc='' wez_prev_total='' wez_cpu='' wez_rss=''
+WEZ_ICON=$'\uf489' # nf-oct-terminal
 # Thresholds: CPU < 5% green, up to 10% yellow, above red;
 # RAM < 500M green, up to 1G yellow, above red
 WEZ_CPU_WARN=5 WEZ_CPU_CRIT=10
 WEZ_RAM_WARN=$((500 * 1024 * 1024)) WEZ_RAM_CRIT=$((1024 * 1024 * 1024))
 
-# Sets $wez_segment (a global, not printed: the previous sample must survive
-# between calls, which a $(...) subshell would lose)
+# Samples into globals (the previous sample must survive between calls, which
+# a $(...) subshell would lose); wez_segs adds them to the footer
 wezterm_usage() {
-  wez_segment=''
+  wez_cpu='' wez_rss=''
   local stat total proc rss cpu='…' cpu_color=$FG0 ram_color
   stat=$(</proc/"$WEZ_PID"/stat) || return
   read -r _ u n s i w q sq st _ </proc/stat
@@ -35,5 +36,17 @@ wezterm_usage() {
   if ((rss < WEZ_RAM_WARN)); then ram_color=$GREEN
   elif ((rss <= WEZ_RAM_CRIT)); then ram_color=$YELLOW
   else ram_color=$RED; fi
-  wez_segment="$(fg "$WEZ_COLOR") wezterm usage $(fg "$cpu_color")$cpu$(fg "$GRAY") · $(fg "$ram_color")$(human "$rss")"
+  wez_cpu=$cpu wez_cpu_color=$cpu_color wez_rss=$(human "$rss") wez_ram_color=$ram_color
+}
+
+# $1: footer background
+wez_segs() {
+  [ -n "$wez_rss" ] || return
+  seg_right
+  seg i "$(sty "$1" "$WEZ_COLOR")" "$WEZ_ICON"
+  seg s "$(sty "$1" "$WEZ_COLOR")" " wezterm usage"
+  seg g "$(sty "$1" "$GRAY")" " "
+  seg p "$(sty "$1" "$wez_cpu_color")" "$wez_cpu"
+  seg g "$(sty "$1" "$GRAY")" " · " " "
+  seg p "$(sty "$1" "$wez_ram_color")" "$wez_rss"
 }

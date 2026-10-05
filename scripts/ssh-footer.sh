@@ -36,8 +36,7 @@ duration() { # seconds -> 2h03m
   else printf '%dm%02ds' $((s / 60)) $((s % 60)); fi
 }
 
-strip() { sed 's/\x1b\[[0-9;]*m//g' <<<"$1"; }
-
+. "$(dirname "$0")/footer-fit.sh"
 . "$(dirname "$0")/wezterm-usage.sh"
 
 printf '\e[?25l' # hide cursor
@@ -45,7 +44,34 @@ stty -echo -icanon 2>/dev/null
 trap 'printf "\e[?25h"' EXIT
 trap 'draw' WINCH
 
-prev_sent='' prev_recv='' prev_time='' up_rate='' down_rate='' line=''
+# A colored block: icon and primary text ($1 background, $2 icon, $3 text)
+block() {
+  local st
+  st=$(sty "$1" "$BG_DIM" b)
+  seg i "$st" " $2"
+  seg g "$st" " " ""
+  seg p "$st" "$3"
+  seg i "$st" " "
+}
+# One footer item: icon, value and an optional secondary text.
+# Uses the styles set in collect().
+item() { # color, icon, value, [secondary], [value color]
+  seg i "$(sty "$BASE" "$1")" "$2"
+  seg g "$base_s" " " ""
+  seg p "$(sty "$BASE" "${5:-$FG0}")" "$3"
+  [ -n "$4" ] && seg s "$gray_s" "$4"
+}
+sep() { seg g "$sep_s" " │ " "│"; }
+# Host (background $1), then user, IP and port each in their own block
+addr() {
+  block "$1" 󰒋 "$alias"
+  [ -n "$user" ] && block "$user_color" $'\uf007' "$user"
+  block "$YELLOW" 󰩟 "$ip"
+  block "$BLUE" 󰒍 "$port"
+  seg g "$base_s" "  " " "
+}
+
+prev_sent='' prev_recv='' prev_time='' up_rate='' down_rate=''
 auth_sp='' auth_time='' pending_since='' prev_retrans=0
 
 collect() {
@@ -58,16 +84,15 @@ collect() {
   if [ "$(ps -o comm= -p "$pid")" = ssh ]; then sp=$pid
   else sp=$(pgrep -P "$pid" -x ssh | head -1); fi
 
-  local host=" 󰒋 $alias " user_color=$ORANGE
+  local user_color=$ORANGE base_s sep_s gray_s
   BASE=$BG_DIM
   [ "$user" = root ] && BASE=$ROOT_BG user_color=$RED
-  # user, IP and port each in their own block
-  local addr=''
-  [ -n "$user" ] && addr+="$(bg "$user_color")$(fg "$BG_DIM")$B  $user $N"
-  addr+="$(bg "$YELLOW")$(fg "$BG_DIM")$B 󰩟 $ip $N"
-  addr+="$(bg "$BLUE")$(fg "$BG_DIM")$B 󰒍 $port $N"
+  base_s=$(sty "$BASE" "$FG0") sep_s=$(sty "$BASE" "$BG3") gray_s=$(sty "$BASE" "$GRAY")
+  seg_reset
   if [ -z "$sp" ]; then
-    line="$(bg "$RED")$(fg "$BG_DIM")$B$host$N$addr$(bg "$BASE")$(fg "$RED")  ● disconnected"
+    addr "$RED"
+    item "$RED" ● disconnected "" "$RED"
+    wez_segs "$BASE"
     prev_sent='' pending_since=''
     return
   fi
@@ -122,58 +147,48 @@ collect() {
   fi
   prev_sent=$sent prev_recv=$recv prev_time=$now
 
-  local sep="$(fg "$BG3") │ " state_color=$GREEN
+  local state_color=$GREEN
   ((stall >= 5)) && state_color=$YELLOW
   ((stall >= 15)) && state_color=$RED
-  line="$(bg "$state_color")$(fg "$BG_DIM")$B$host$N$addr$(bg "$BASE")"
+  addr "$state_color"
   if ((stall >= 5)); then
-    line+="  $(fg "$state_color")$B⚠ no response for $(duration "$stall")$N $(fg "$GRAY")· Alt+R reconnects$sep"
-  else
-    line+='  '
+    seg i "$(sty "$BASE" "$state_color" b)" ⚠
+    seg g "$base_s" " " ""
+    seg p "$(sty "$BASE" "$state_color" b)" "no response for $(duration "$stall")"
+    seg s "$gray_s" " · Alt+R reconnects"
+    sep
   fi
   if [ -n "$auth_time" ]; then
-    line+="$(fg "$YELLOW")󱑎 $(fg "$FG0")$(duration $((now - auth_time)))"
+    item "$YELLOW" 󱑎 "$(duration $((now - auth_time)))"
   else
-    line+="$(fg "$YELLOW")󰌆 $(fg "$FG_DIM")authenticating..."
+    item "$YELLOW" 󰌆 "authenticating..." "" "$FG_DIM"
   fi
   if [ -n "$sent" ]; then
-    line+="$sep$(fg "$AQUA")↑ $(fg "$FG0")$(human "$sent" GT)$(fg "$GRAY")${up_rate:+ $up_rate}"
-    line+="$sep$(fg "$BLUE")↓ $(fg "$FG0")$(human "$recv" GT)$(fg "$GRAY")${down_rate:+ $down_rate}"
+    sep; item "$AQUA" ↑ "$(human "$sent" GT)" "${up_rate:+ $up_rate}"
+    sep; item "$BLUE" ↓ "$(human "$recv" GT)" "${down_rate:+ $down_rate}"
     local ms jit color=$GREEN
     ms=$(printf '%.0f' "${rtt:-0}") jit=$(printf '%.0f' "${rttvar:-0}")
     ((ms >= 80 || jit >= 50)) && color=$YELLOW
     ((ms >= 200 || jit >= 150)) && color=$RED
-    line+="$sep$(fg "$color")󰓅 $(fg "$FG0")${ms} ms$(fg "$GRAY") ±${jit}"
+    sep; item "$color" 󰓅 "${ms} ms" " ±${jit}"
     # retransmitted segments: packet loss on the way
     if ((${retrans:-0} > 0)); then
       local rcolor=$GRAY
       ((retrans > prev_retrans)) && rcolor=$ORANGE
-      line+="$sep$(fg "$rcolor")󰑓 ${retrans} lost"
+      sep; item "$rcolor" 󰑓 "${retrans} lost" "" "$rcolor"
     fi
     prev_retrans=${retrans:-0}
   else
     # shared connection (ControlMaster): the socket belongs to the master
-    line+="$sep$(fg "$PURPLE")󰌘 $(fg "$FG_DIM")shared connection"
+    sep; item "$PURPLE" 󰌘 "shared connection" "" "$FG_DIM"
   fi
+  wez_segs "$BASE" # at the far right
 }
 
 draw() {
-  local cols plain
+  local cols
   cols=$(stty size 2>/dev/null </dev/tty | cut -d' ' -f2)
-  plain=$(strip "$line")
-  cols=${cols:-80}
-  # truncating an ANSI string safely is not worth it: drop the stats if too narrow
-  if ((${#plain} >= cols)); then
-    line=${line%%$'\e[48;2;'"$BASE"'m'*}$(bg "$BASE")
-    plain=$(strip "$line")
-  fi
-  # WezTerm's own usage at the far right, when it fits
-  local right='' rplain
-  rplain=$(strip "$wez_segment")
-  if [ -n "$wez_segment" ] && ((${#plain} + ${#rplain} + 2 < cols)); then
-    right="\e[$((cols - ${#rplain} + 1))G$(bg "$BASE")$wez_segment"
-  fi
-  printf '\e[H%s%s\e[K%b%s' "$(bg "$BASE")" "$line" "$right" "$R"
+  fit_draw "${cols:-80}" "$BASE"
 }
 
 while :; do

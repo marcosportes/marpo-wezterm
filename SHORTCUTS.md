@@ -62,6 +62,10 @@ counters, so it adds no traffic and runs nothing on the server. `Alt+↑↓` ski
 it is not saved in the session (it is recreated), and it closes when the
 connection ends.
 
+On narrow windows the footers (SSH and local) keep every item: secondary texts
+(totals, labels, hints) shrink first, then the values show only their first
+letters ("marpo-l…"), down to just the icons.
+
 ## Notifications
 When a tab you are not looking at rings the bell (`long-command; printf '\a'`),
 a desktop notification names it and the tab gets a 󰂞 icon until you select it.
@@ -104,6 +108,9 @@ lua/
 scripts/
   ssh-reconnect.sh          SSH reconnect
   ssh-footer.sh             draws the SSH footer
+  local-footer.sh           draws the local footer (CPU, RAM, disk, network)
+  footer-fit.sh             shrinks the footers to the window width
+  wezterm-usage.sh          WezTerm's own CPU/RAM, at the far right of the footers
 ```
 
 To add a new module: create it in `lua/core/` or `lua/plugins/` with an

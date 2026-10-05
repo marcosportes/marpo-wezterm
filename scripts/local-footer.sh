@@ -34,8 +34,7 @@ level() { # percentage -> color
   else echo "$GREEN"; fi
 }
 
-strip() { sed 's/\x1b\[[0-9;]*m//g' <<<"$1"; }
-
+. "$(dirname "$0")/footer-fit.sh"
 . "$(dirname "$0")/wezterm-usage.sh"
 
 printf '\e[?25l' # hide cursor
@@ -81,7 +80,17 @@ fg_user() {
       print user[p]
     }'
 }
-prev_total='' prev_idle='' prev_rx='' prev_tx='' prev_time='' line=''
+# One footer item: icon, value and an optional secondary text ("/ total").
+# Uses the styles set in collect().
+item() { # color, icon, value, [secondary]
+  seg i "$(sty "$BASE" "$1")" "$2"
+  seg g "$base_s" " " ""
+  seg p "$base_s" "$3"
+  [ -n "$4" ] && seg s "$gray_s" "$4"
+}
+sep() { seg g "$sep_s" " │ " "│"; }
+
+prev_total='' prev_idle='' prev_rx='' prev_tx='' prev_time=''
 
 collect() {
   [ -r "$state" ] || exit 0
@@ -92,7 +101,7 @@ collect() {
   BASE=$BG_DIM user_color=$ORANGE
   [ "$USER_NAME" = root ] && BASE=$ROOT_BG user_color=$RED
 
-  local now sep="$(fg "$BG3") │ "
+  local now
   now=$(date +%s)
 
   # CPU: busy share of the time elapsed since the last sample (/proc/stat)
@@ -127,37 +136,34 @@ collect() {
   fi
   prev_rx=$rx prev_tx=$tx prev_time=$now
 
-  line="$(bg "$GREEN")$(fg "$BG_DIM")$B ${FRAMES[frame]} $HOST $N"
-  line+="$(bg "$user_color")$(fg "$BG_DIM")$B  $USER_NAME $N$(bg "$BASE")  "
-  if [ -n "$cpu" ]; then
-    line+="$(fg "$(level "$cpu")")󰻠 $(fg "$FG0")${cpu}%"
-  else
-    line+="$(fg "$GREEN")󰻠 $(fg "$GRAY")…"
-  fi
-  line+="$sep$(fg "$(level "$mem_pct")")󰍛 $(fg "$FG0")$(human "$mem_used")$(fg "$GRAY") / $(human "$mem_total")"
-  line+="$sep$(fg "$(level "$disk_pct")")󰋊 $(fg "$FG0")$(human "$disk_used" "")$(fg "$GRAY") / $(human "$disk_size" "")"
-  line+="$sep$(fg "$AQUA")↑ $(fg "$FG0")$up_rate"
-  line+="$sep$(fg "$BLUE")↓ $(fg "$FG0")$down_rate"
-  wezterm_usage # drawn at the far right by draw()
+  wezterm_usage
+
+  # host and user blocks; the first cell is fixed: anim() draws the tux at col 2
+  local host_s user_s base_s sep_s gray_s
+  host_s=$(sty "$GREEN" "$BG_DIM" b) user_s=$(sty "$user_color" "$BG_DIM" b)
+  base_s=$(sty "$BASE" "$FG0") sep_s=$(sty "$BASE" "$BG3") gray_s=$(sty "$BASE" "$GRAY")
+  seg_reset
+  seg i "$host_s" " ${FRAMES[frame]} "
+  seg p "$host_s" "$HOST"
+  seg i "$host_s" " "
+  seg i "$user_s" " "$'\uf007'
+  seg g "$user_s" " " ""
+  seg p "$user_s" "$USER_NAME"
+  seg i "$user_s" " "
+  seg g "$base_s" "  " " "
+  if [ -n "$cpu" ]; then item "$(level "$cpu")" 󰻠 "${cpu}%"
+  else item "$GREEN" 󰻠 "…"; fi
+  sep; item "$(level "$mem_pct")" 󰍛 "$(human "$mem_used")" " / $(human "$mem_total")"
+  sep; item "$(level "$disk_pct")" 󰋊 "$(human "$disk_used" "")" " / $(human "$disk_size" "")"
+  sep; item "$AQUA" ↑ "$up_rate"
+  sep; item "$BLUE" ↓ "$down_rate"
+  wez_segs "$BASE" # at the far right
 }
 
 draw() {
-  local cols plain
+  local cols
   cols=$(stty size 2>/dev/null </dev/tty | cut -d' ' -f2)
-  plain=$(strip "$line")
-  cols=${cols:-80}
-  # too narrow: keep only host and user
-  if ((${#plain} >= cols)); then
-    line=${line%%$'\e[48;2;'"$BASE"'m'*}$(bg "$BASE")
-    plain=$(strip "$line")
-  fi
-  # WezTerm's own usage at the far right, when it fits
-  local right='' rplain
-  rplain=$(strip "$wez_segment")
-  if [ -n "$wez_segment" ] && ((${#plain} + ${#rplain} + 2 < cols)); then
-    right="\e[$((cols - ${#rplain} + 1))G$(bg "$BASE")$wez_segment"
-  fi
-  printf '\e[H%s%s\e[K%b%s' "$(bg "$BASE")" "$line" "$right" "$R"
+  fit_draw "${cols:-80}" "$BASE"
 }
 
 while :; do
