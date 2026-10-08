@@ -35,8 +35,59 @@ local BAR = {
 }
 
 -- Fixed tab width in columns (~ the size of Tabby's tabs).
--- Shrinks automatically when there are too many tabs to fit the bar.
+-- When there are too many tabs to fit, they shrink to fill the bar exactly.
 M.tab_width = 24
+
+-- config.tab_max_width. WezTerm caps every tab at (free columns / tabs), which
+-- leaves the remainder plus one column per tab empty after the + button. To
+-- avoid that, the first (measuring) pass, called with this value as max_width,
+-- reports widths that fit under the cap, so WezTerm caps tabs at this huge value
+-- instead; the second (drawing) pass then spreads the bar's columns over the tabs.
+local MAX_WIDTH = 1000
+local NEW_TAB_WIDTH = 3 -- ' + ' of the retro tab bar
+
+-- Columns of the tab bar (the window width in cells), or nil if unknown.
+-- GUI window methods can't be called from format-tab-title, so the width is
+-- measured in update-status/window-resized and kept in wezterm.GLOBAL.
+local function cols_key(window_id) return 'tabbar_cols_' .. tostring(window_id) end
+
+local function bar_columns(window_id)
+  return wezterm.GLOBAL[cols_key(window_id)]
+end
+
+local nudge = false
+
+local function measure_bar(window)
+  local ok, cols = pcall(function()
+    local d = window:active_pane():get_dimensions()
+    local cell = d.pixel_width / d.cols
+    return math.floor(window:get_dimensions().pixel_width / cell + 0.01)
+  end)
+  if not ok or not cols then return end
+  local k = cols_key(window:window_id())
+  if wezterm.GLOBAL[k] ~= cols then
+    wezterm.GLOBAL[k] = cols
+    -- the tab bar is rebuilt when the right status changes
+    -- (alternate between two invisible values, as in plugins/spinner.lua)
+    nudge = not nudge
+    window:set_right_status(nudge and wezterm.format { 'ResetAttributes' } or '')
+  end
+end
+
+local function width_for(tab, tabs, max_width)
+  local cols = bar_columns(tab.window_id)
+  if not cols then return math.min(M.tab_width, max_width) end
+  local n = #tabs
+  local total = cols - NEW_TAB_WIDTH
+  if max_width == MAX_WIDTH then
+    -- measuring pass: stay within WezTerm's free columns
+    return math.max(1, math.min(M.tab_width, (total - (n - 1)) // n))
+  end
+  if n * M.tab_width <= total then return M.tab_width end
+  local w = total // n
+  if tab.tab_index < total % n then w = w + 1 end
+  return math.max(1, w)
+end
 
 local function key(tab_id) return 'tabcolor_' .. tostring(tab_id) end
 
@@ -58,9 +109,9 @@ local function tab_title(tab)
   return title
 end
 
-function M.format_tab_title(tab, _, _, _, hover, max_width)
+function M.format_tab_title(tab, tabs, _, _, hover, max_width)
   local color = M.get_color(tab.tab_id)
-  local width = math.min(M.tab_width, max_width)
+  local width = width_for(tab, tabs, max_width)
   local inner = math.max(1, width - 3) -- left + right padding + color stripe
   local text = (tab.tab_index + 1) .. ': ' .. tab_title(tab)
   -- bell rung while the tab was in the background (plugins/notify.lua)
@@ -155,6 +206,9 @@ end
 
 function M.apply(config)
   wezterm.on('format-tab-title', M.format_tab_title)
+  config.tab_max_width = MAX_WIDTH
+  wezterm.on('update-status', measure_bar)
+  wezterm.on('window-resized', measure_bar)
   config.keys = config.keys or {}
   table.insert(config.keys, { key = 'F2', mods = 'NONE', action = M.rename_action() })
   table.insert(config.keys, { key = 'F2', mods = 'SHIFT', action = M.color_action() })
