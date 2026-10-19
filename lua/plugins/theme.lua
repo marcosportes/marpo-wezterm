@@ -1,5 +1,5 @@
 -- ============================================
--- THEME PICKER (Shift+T)
+-- THEME PICKER (Ctrl+Shift+T)
 -- ============================================
 local wezterm = require 'wezterm'
 local act = wezterm.action
@@ -63,7 +63,7 @@ function M.apply(config)
   end)
 
   config.keys = config.keys or {}
-  table.insert(config.keys, { key = 't', mods = 'SHIFT', action = M.picker_action() })
+  table.insert(config.keys, { key = 't', mods = 'CTRL|SHIFT', action = M.picker_action() })
 end
 
 return M

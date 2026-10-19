@@ -3,7 +3,7 @@
 -- ============================================
 -- Feature-specific keys live with their feature:
 --   F2 / Shift+F2 -> plugins/tabs.lua · Alt+S -> plugins/session.lua
---   Shift+T -> plugins/theme.lua · Alt+H -> plugins/help.lua
+--   Ctrl+Shift+T -> plugins/theme.lua · Alt+H -> plugins/help.lua
 local wezterm = require 'wezterm'
 local act = wezterm.action
 local ssh = require 'plugins.ssh'

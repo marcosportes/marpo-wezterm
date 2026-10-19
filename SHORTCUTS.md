@@ -47,7 +47,7 @@
 ## Theme
 | Shortcut | Action |
 |---|---|
-| `Shift+T` | Theme list: Gruvbox (default), Dracula, Nord, Wonokai, One Dark, Ayu, Everforest |
+| `Ctrl+Shift+T` | Theme list: Gruvbox (default), Dracula, Nord, Wonokai, One Dark, Ayu, Everforest |
 | `Alt+H` | Shortcut list: every command and a one-line description |
 
 The chosen theme is stored in `~/.local/share/wezterm/theme` and applies to every window.
@@ -122,7 +122,7 @@ lua/
     ssh_info.lua            SSH footer (creates/keeps it) and Alt+I copy
     notify.lua              notification + tab icon on bell in background tabs
     spinner.lua             spinner on busy tabs, 󰌌 + notification when waiting for input
-    theme.lua               Shift+T theme list
+    theme.lua               Ctrl+Shift+T theme list
     help.lua                Alt+H shortcut list
     update.lua              startup check for a newer version on GitHub
 scripts/

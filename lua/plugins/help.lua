@@ -11,7 +11,7 @@ local KEY_WIDTH = 18
 -- key, what it does
 local commands = {
   { 'Alt+H', 'Show this list' },
-  { 'Shift+T', 'Change the color theme' },
+  { 'Ctrl+Shift+T', 'Change the color theme' },
   { 'Alt+X', 'SSH host picker' },
   { 'Alt+L', 'Launch menu' },
   { 'Alt+T', 'New tab' },
