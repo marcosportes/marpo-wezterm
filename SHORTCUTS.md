@@ -44,6 +44,21 @@
 | `Alt+S` | Save session now (it already saves every 10 s) |
 | `Ctrl+Shift+R` | Reload config |
 
+## Theme
+| Shortcut | Action |
+|---|---|
+| `Shift+T` | Theme list: Gruvbox (default), Dracula, Nord, Wonokai, One Dark, Ayu, Everforest |
+| `Alt+H` | Shortcut list: every command and a one-line description |
+
+The chosen theme is stored in `~/.local/share/wezterm/theme` and applies to every window.
+
+## Updates
+Each time WezTerm starts it checks GitHub once. If origin is ahead of the last
+`./setup.sh`, it asks with the same prompt as closing a tab. **Yes** runs
+`./setup.sh` (git pull and sync). The installed commit is recorded in
+`~/.local/share/wezterm/install`. Offline, up to date, or not a fast-forward
+stays quiet.
+
 On startup WezTerm restores windows, tabs, splits, directories, tab names/colors
 and SSH connections (file: `~/.local/share/wezterm/session.json`).
 
@@ -92,7 +107,8 @@ lua/
   core/
     init.lua                builds the config and loads every module in order
     options.lua             rendering/performance, bell, general behavior
-    colors.lua              Gruvbox Material palette (shared by theme and tabs)
+    colors.lua              Gruvbox Material palette (the default theme)
+    themes.lua              theme list, saved choice, live switch
     appearance.lua          theme, window, tab bar
     fonts.lua               font setup (reads custom/preferences.lua)
     keymaps.lua             key bindings
@@ -105,12 +121,17 @@ lua/
     ssh_info.lua            SSH footer (creates/keeps it) and Alt+I copy
     notify.lua              notification + tab icon on bell in background tabs
     spinner.lua             spinner on busy tabs, 󰌌 + notification when waiting for input
+    theme.lua               Shift+T theme list
+    help.lua                Alt+H shortcut list
+    update.lua              startup check for a newer version on GitHub
 scripts/
   ssh-reconnect.sh          SSH reconnect
   ssh-footer.sh             draws the SSH footer
   local-footer.sh           draws the local footer (CPU, RAM, disk, network)
   footer-fit.sh             shrinks the footers to the window width
   wezterm-usage.sh          WezTerm's own CPU/RAM, at the far right of the footers
+  check-update.sh           compares the installed commit with GitHub
+  apply-update.sh           runs setup.sh when the update prompt is accepted
 ```
 
 To add a new module: create it in `lua/core/` or `lua/plugins/` with an

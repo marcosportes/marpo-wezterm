@@ -174,6 +174,15 @@ else
     chmod +x "$DEST_DIR"/scripts/*.sh
 fi
 
+# Commit that is now installed, so WezTerm can ask when GitHub is ahead.
+STATE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/wezterm"
+mkdir -p "$STATE_DIR"
+COMMIT="$(git -C "$SRC_DIR" rev-parse HEAD 2>/dev/null || true)"
+if [ -n "$COMMIT" ]; then
+    printf 'source=%s\ncommit=%s\n' "$SRC_DIR" "$COMMIT" > "$STATE_DIR/install.tmp"
+    mv "$STATE_DIR/install.tmp" "$STATE_DIR/install"
+fi
+
 # ========================================
 # Finalização
 # ========================================

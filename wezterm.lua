@@ -3,7 +3,7 @@
 -- ============================================
 -- Layout (Neovim style):
 --   lua/core/     base settings (options, appearance, fonts, keymaps, mouse, launch menu)
---   lua/plugins/  features (ssh picker, colored tabs, session restore)
+--   lua/plugins/  features (ssh picker, colored tabs, session restore, themes, help, update)
 --   lua/custom/   personal tweaks (preferences.lua: font, size, weight)
 --   scripts/      helper shell scripts
 local wezterm = require 'wezterm'

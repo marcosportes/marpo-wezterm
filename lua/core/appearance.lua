@@ -1,33 +1,13 @@
 -- ============================================
 -- APPEARANCE: theme, window and tab bar
 -- ============================================
-local wezterm = require 'wezterm'
-local c = require 'core.colors'
+local themes = require 'core.themes'
 
 local M = {}
 
-local function gruvbox_material()
-  local scheme = wezterm.color.get_builtin_schemes()['Gruvbox Material (Gogh)']
-  -- The original "bright black" (#3c3836) disappears into the background; use the
-  -- theme's gray instead so comments, zsh-autosuggestions etc. stay readable.
-  scheme.brights[1] = c.gray
-  scheme.selection_bg = c.bg3
-  scheme.selection_fg = c.fg0
-  scheme.tab_bar = {
-    background = c.bg_dim,
-    active_tab = { bg_color = c.green, fg_color = c.bg0, intensity = 'Bold' },
-    inactive_tab = { bg_color = c.bg1, fg_color = c.fg_dim },
-    inactive_tab_hover = { bg_color = c.bg3, fg_color = c.fg0 },
-    new_tab = { bg_color = c.bg_dim, fg_color = c.fg_dim },
-    new_tab_hover = { bg_color = c.bg3, fg_color = c.fg0 },
-  }
-  return scheme
-end
-
 function M.apply(config)
   -- ===== THEME =====
-  config.color_schemes = { ['Gruvbox Material'] = gruvbox_material() }
-  config.color_scheme = 'Gruvbox Material'
+  themes.apply_config(config)
 
   -- ===== WINDOW =====
   config.window_background_opacity = 1.0

@@ -28,7 +28,7 @@ Use `./setup.sh --no-pull` to skip the `git pull`.
 
 - `wezterm.lua`: entry point
 - `lua/core/`: base settings (options, appearance, fonts, keymaps, mouse)
-- `lua/plugins/`: features (SSH picker, colored tabs, session restore)
+- `lua/plugins/`: features (SSH picker, colored tabs, session restore, themes, help, update)
 - `lua/custom/`: personal tweaks (`preferences.lua`)
 - `scripts/`: helper shell scripts
 - `fonts/`: bundled Hack Nerd Font Mono, loaded via `font_dirs` (no system install needed)

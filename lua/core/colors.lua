@@ -1,7 +1,7 @@
 -- ============================================
 -- COLORS: Gruvbox Material (dark, medium) palette
 -- ============================================
--- Shared by core/appearance.lua (theme) and plugins/tabs.lua (tab rendering).
+-- Gruvbox palette used by the default theme in core/themes.lua.
 return {
   bg_dim = '#1d2021',
   bg0 = '#282828',

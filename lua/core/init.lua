@@ -22,6 +22,9 @@ local plugins = {
   'plugins.ssh_info',
   'plugins.notify',
   'plugins.spinner',
+  'plugins.theme',
+  'plugins.help',
+  'plugins.update',
 }
 
 function M.setup()

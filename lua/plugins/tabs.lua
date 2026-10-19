@@ -6,7 +6,7 @@
 -- in the session by session.lua.
 local wezterm = require 'wezterm'
 local act = wezterm.action
-local c = require 'core.colors'
+local themes = require 'core.themes'
 local notify = require 'plugins.notify'
 local spinner = require 'plugins.spinner'
 
@@ -25,13 +25,6 @@ M.colors = {
   { name = 'Pink',         hex = '#d3869b' },
   { name = 'Brown',        hex = '#a0785a' },
   { name = 'Gray',         hex = '#928374' },
-}
-
--- Default tab bar colors (same as the theme in core/appearance.lua)
-local BAR = {
-  active_bg = c.green, active_fg = c.bg0,
-  inactive_bg = c.bg1, inactive_fg = c.fg_dim,
-  hover_bg = c.bg3, hover_fg = c.fg0,
 }
 
 -- Fixed tab width in columns (~ the size of Tabby's tabs).
@@ -110,6 +103,7 @@ local function tab_title(tab)
 end
 
 function M.format_tab_title(tab, tabs, _, _, hover, max_width)
+  local bar = themes.bar()
   local color = M.get_color(tab.tab_id)
   local width = width_for(tab, tabs, max_width)
   local inner = math.max(1, width - 3) -- left + right padding + color stripe
@@ -128,14 +122,14 @@ function M.format_tab_title(tab, tabs, _, _, hover, max_width)
 
   if tab.is_active then
     return {
-      { Background = { Color = color or BAR.active_bg } },
-      { Foreground = { Color = BAR.active_fg } },
+      { Background = { Color = color or bar.active_bg } },
+      { Foreground = { Color = bar.active_fg } },
       { Attribute = { Intensity = 'Bold' } },
       { Text = ' ' .. text .. '  ' },
     }
   end
 
-  local bg = hover and BAR.hover_bg or BAR.inactive_bg
+  local bg = hover and bar.hover_bg or bar.inactive_bg
   if color then
     -- colored inactive tab: stripe + text in the chosen color
     return {
@@ -146,7 +140,7 @@ function M.format_tab_title(tab, tabs, _, _, hover, max_width)
   end
   return {
     { Background = { Color = bg } },
-    { Foreground = { Color = hover and BAR.hover_fg or BAR.inactive_fg } },
+    { Foreground = { Color = hover and bar.hover_fg or bar.inactive_fg } },
     { Text = ' ' .. text .. '  ' },
   }
 end
