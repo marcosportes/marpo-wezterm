@@ -7,7 +7,7 @@ My [WezTerm](https://wezfurlong.org/wezterm/) configuration.
 ## Install
 
 ```bash
-git clone https://github.com/<user>/marpo-wezterm.git
+git clone https://github.com/marcosportes/marpo-wezterm.git
 cd marpo-wezterm
 ./setup.sh
 ```
