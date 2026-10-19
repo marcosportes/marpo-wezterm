@@ -1,6 +1,7 @@
 #!/bin/sh
 # Compares origin with the commit last installed by setup.sh.
-# Writes one line to DEST: a commit sha (origin is ahead), "same", or "fail".
+# Writes to DEST: "same", "fail", or the remote sha followed by one subject
+# per commit that is on origin and not installed.
 # Usage: check-update.sh SOURCE_DIR INSTALLED_COMMIT DEST
 source=$1
 installed=$2
@@ -46,7 +47,11 @@ fi
 if [ "$remote" = "$installed" ]; then
   finish same
 elif git -C "$source" merge-base --is-ancestor "$installed" "$remote"; then
-  finish "$remote"
+  {
+    printf '%s\n' "$remote"
+    git -C "$source" log --format='%s' "$installed..$remote" || true
+  } > "$tmp"
+  mv "$tmp" "$dest"
 else
   # Local history is not behind origin (ahead, or diverged). Nothing to fast-forward.
   finish same

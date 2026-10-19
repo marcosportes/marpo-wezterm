@@ -25,6 +25,36 @@ local function read_line(path)
   return line
 end
 
+-- First line is the status. The rest are pending commit subjects.
+local function read_result(path)
+  local f = io.open(path, 'r')
+  if not f then return nil end
+  local status = (f:read('*l') or ''):gsub('%s+$', '')
+  local notes = {}
+  for line in f:lines() do
+    if line ~= '' then table.insert(notes, line) end
+  end
+  f:close()
+  if status == '' then return nil end
+  return status, notes
+end
+
+local function describe(notes)
+  if #notes == 0 then
+    return 'A newer version is on GitHub. Update now?'
+  end
+  local lines = { 'A newer version is on GitHub:' }
+  local limit = 8
+  for i = 1, math.min(#notes, limit) do
+    table.insert(lines, '• ' .. notes[i])
+  end
+  if #notes > limit then
+    table.insert(lines, '• … and ' .. (#notes - limit) .. ' more')
+  end
+  table.insert(lines, 'Update now?')
+  return table.concat(lines, '\n')
+end
+
 local function read_stamp()
   local f = io.open(STAMP, 'r')
   if not f then return nil end
@@ -68,10 +98,10 @@ local function run_update(win, remote)
   win:toast_notification('WezTerm', 'Updating…', nil, 4000)
 end
 
-local function ask(window, pane, remote)
+local function ask(window, pane, remote, notes)
   window:perform_action(act.InputSelector {
     title = 'Update available',
-    description = 'A newer version is on GitHub. Update now?',
+    description = describe(notes),
     choices = {
       { id = 'no', label = '❌ No, not now' },
       { id = 'yes', label = '✅ Yes, update' },
@@ -119,7 +149,7 @@ function M.apply(config)
       return
     end
 
-    local remote = read_line(RESULT)
+    local remote, notes = read_result(RESULT)
     if not remote then
       if os.time() - (wezterm.GLOBAL.update_started or 0) > CHECK_WAIT then
         wezterm.GLOBAL.update_prompted = true
@@ -136,7 +166,7 @@ function M.apply(config)
     if not pane then return end
     wezterm.GLOBAL.update_prompted = true
     os.remove(RESULT)
-    ask(window, pane, remote)
+    ask(window, pane, remote, notes or {})
   end)
 end
 

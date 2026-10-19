@@ -44,7 +44,7 @@ local commands = {
   { 'Alt+S', 'Save the session now' },
   { 'Ctrl+Shift+R', 'Reload the config' },
   { 'Enter / s / q', 'SSH dropped: reconnect, local shell, close' },
-  { 'On startup', 'Ask to update when GitHub has a newer version' },
+  { 'On startup', 'Ask to update and list the pending commit messages' },
 }
 
 local function pad(text)

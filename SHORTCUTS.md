@@ -54,7 +54,8 @@ The chosen theme is stored in `~/.local/share/wezterm/theme` and applies to ever
 
 ## Updates
 Each time WezTerm starts it checks GitHub once. If origin is ahead of the last
-`./setup.sh`, it asks with the same prompt as closing a tab. **Yes** runs
+`./setup.sh`, it asks with the same prompt as closing a tab and lists the
+pending commit messages. **Yes** runs
 `./setup.sh` (git pull and sync). The installed commit is recorded in
 `~/.local/share/wezterm/install`. Offline, up to date, or not a fast-forward
 stays quiet.
