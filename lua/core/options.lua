@@ -3,6 +3,20 @@
 -- ============================================
 local wezterm = require 'wezterm'
 
+-- Native Wayland (true) or XWayland (false). Even when true, desktops whose
+-- Wayland compositor draws no title bars for apps (no server-side decorations)
+-- run through XWayland, so the system title bar and its buttons stay
+local PREFER_WAYLAND = false
+local NO_SSD_DESKTOPS = { 'GNOME', 'Pantheon' }
+
+local function desktop_draws_title_bar()
+  local desktop = (os.getenv('XDG_CURRENT_DESKTOP') or ''):upper()
+  for _, name in ipairs(NO_SSD_DESKTOPS) do
+    if desktop:find(name:upper(), 1, true) then return false end
+  end
+  return true
+end
+
 local M = {}
 
 function M.apply(config)
@@ -11,7 +25,7 @@ function M.apply(config)
   config.max_fps = 144
   config.animation_fps = 30
   config.cursor_blink_rate = 0
-  config.enable_wayland = false
+  config.enable_wayland = PREFER_WAYLAND and desktop_draws_title_bar()
 
   -- ===== PERFORMANCE =====
   config.scrollback_lines = 10000
