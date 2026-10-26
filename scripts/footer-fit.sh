@@ -126,8 +126,10 @@ fit_draw() {
   # The pane's default background (OSC 11) paints the strip WezTerm leaves
   # between the divider and the row. plugins/ssh_info.lua writes the terminal
   # background there, brightened so it matches once the footer is dimmed.
+  # $(<file), not the read builtin: draw also runs from the WINCH trap, and a
+  # read there leaves the main loop's `read -t` waiting with no timeout
   local pane_bg
-  read -r pane_bg <"$(dirname "$state")/bg"
+  pane_bg=$(<"${state%/*}/bg")
   if [ -n "$pane_bg" ] && [ "$pane_bg" != "$FIT_BG" ]; then
     FIT_BG=$pane_bg
     printf '\e]11;%s\e\\' "$pane_bg"
