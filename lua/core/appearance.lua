@@ -5,13 +5,17 @@ local themes = require 'core.themes'
 
 local M = {}
 
+M.padding = { left = 0, right = 0, top = 10, bottom = 0 }
+
 function M.apply(config)
   -- ===== THEME =====
   themes.apply_config(config)
 
   -- ===== WINDOW =====
   config.window_background_opacity = 1.0
-  config.window_padding = { left = 10, right = 10, top = 10, bottom = 10 }
+  -- left, right and bottom = 0: the footer pane sits flush against the edges
+  -- (plugins/ssh_info.lua moves the leftover pixels to the top padding)
+  config.window_padding = M.padding
   -- TITLE: native title bar with minimize/maximize/close buttons (without it,
   -- X11 desktops like Cinnamon drop the whole title bar)
   config.window_decorations = 'TITLE | RESIZE'

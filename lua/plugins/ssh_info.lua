@@ -7,6 +7,7 @@
 local wezterm = require 'wezterm'
 local act = wezterm.action
 local ssh = require 'plugins.ssh'
+local appearance = require 'core.appearance'
 
 local M = {}
 
@@ -162,9 +163,73 @@ local function sync_footer(window)
   end
 end
 
+-- The window rarely fits a whole number of rows; WezTerm leaves the leftover
+-- pixels below the last row, i.e. under the footer. Move them to the top
+-- padding so the footer row touches the bottom edge.
+local function flush_footer(window)
+  local ok, top = pcall(function()
+    local pad = appearance.padding
+    local d = window:active_pane():get_dimensions()
+    local cell = math.floor(d.pixel_height / d.viewport_rows)
+    -- the retro tab bar is one terminal cell high
+    local free = window:get_dimensions().pixel_height - pad.top - pad.bottom - cell
+    return pad.top + free % cell
+  end)
+  if not ok or not top then return end
+  local pad = {}
+  for k, v in pairs(appearance.padding) do pad[k] = v end
+  pad.top = top
+  local overrides = window:get_config_overrides() or {}
+  local cur = overrides.window_padding or appearance.padding
+  local same = true
+  for k, v in pairs(pad) do
+    if cur[k] ~= v then same = false end
+  end
+  if same then return end
+  overrides.window_padding = pad
+  window:set_config_overrides(overrides)
+end
+
+-- The footer is always inactive, so WezTerm dims it, including the strip it
+-- paints between the divider and the footer row. Hand the footer scripts the
+-- terminal background undimmed (inverse of inactive_pane_hsb, which scales
+-- linear RGB) so that strip ends up the color of the terminal above.
+local function to_linear(c)
+  c = c / 255
+  return c <= 0.04045 and c / 12.92 or ((c + 0.055) / 1.055) ^ 2.4
+end
+
+local function to_srgb(c)
+  c = math.max(0, math.min(1, c))
+  c = c <= 0.0031308 and c * 12.92 or 1.055 * c ^ (1 / 2.4) - 0.055
+  return math.floor(c * 255 + 0.5)
+end
+
+local function sync_footer_bg(window)
+  local ok, cfg = pcall(function() return window:effective_config() end)
+  if not ok or not cfg then return end
+  local bg = cfg.resolved_palette and cfg.resolved_palette.background
+  if not bg then return end
+  local hsb = cfg.inactive_pane_hsb or {}
+  local s, v = hsb.saturation or 1, hsb.brightness or 1
+  local ok2, r, g, b = pcall(function() return wezterm.color.parse(bg):srgba_u8() end)
+  if not ok2 then return end
+  local lin = { to_linear(r), to_linear(g), to_linear(b) }
+  local max = math.max(lin[1], lin[2], lin[3])
+  local out = {}
+  for i, c in ipairs(lin) do
+    -- undo the saturation scale (distance from the max channel), then brightness
+    if s > 0 then c = max - (max - c) / s end
+    out[i] = to_srgb(c / v)
+  end
+  write_state(STATE_DIR .. '/bg', string.format('#%02x%02x%02x', out[1], out[2], out[3]))
+end
+
 local function update_status(window)
   window:set_left_status('') -- clears what older versions drew there
+  sync_footer_bg(window)
   sync_footer(window)
+  flush_footer(window)
 end
 
 -- Alt+I: copy IP / IP:port / ssh command of the active SSH pane
@@ -196,6 +261,7 @@ end
 
 function M.apply(config)
   wezterm.on('update-status', update_status)
+  wezterm.on('window-resized', flush_footer)
   config.keys = config.keys or {}
   table.insert(config.keys, { key = 'i', mods = 'ALT', action = M.copy_action() })
 end

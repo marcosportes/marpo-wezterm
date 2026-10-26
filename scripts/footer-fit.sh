@@ -123,5 +123,14 @@ fit_draw() {
     seg_render "$cols" "$left_end" "$n"
     ((left_w + OUT_W < cols)) && right="\e[$((cols - OUT_W + 1))G$OUT"
   fi
+  # The pane's default background (OSC 11) paints the strip WezTerm leaves
+  # between the divider and the row. plugins/ssh_info.lua writes the terminal
+  # background there, brightened so it matches once the footer is dimmed.
+  local pane_bg
+  read -r pane_bg <"$(dirname "$state")/bg"
+  if [ -n "$pane_bg" ] && [ "$pane_bg" != "$FIT_BG" ]; then
+    FIT_BG=$pane_bg
+    printf '\e]11;%s\e\\' "$pane_bg"
+  fi
   printf '\e[H%s\e[0;48;2;%sm\e[K%b\e[0m' "$line" "$base" "$right"
 }

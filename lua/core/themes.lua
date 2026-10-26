@@ -202,7 +202,10 @@ function M.apply_config(config)
   wezterm.GLOBAL.theme = id
   local schemes = {}
   for _, theme in ipairs(M.list) do
-    schemes[theme.id] = theme.build()
+    local scheme = theme.build()
+    -- invisible pane divider (it showed as a line above the footer)
+    scheme.split = scheme.background
+    schemes[theme.id] = scheme
   end
   config.color_schemes = schemes
   config.color_scheme = id
