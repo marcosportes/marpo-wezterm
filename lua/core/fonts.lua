@@ -1,10 +1,28 @@
 -- ============================================
--- FONTS: family, size and weight come from custom/preferences.lua
+-- FONTS: family, size and weight come from custom/preferences.lua; the
+-- family and size picked with Ctrl+Shift+F (plugins/font.lua) win over them
 -- ============================================
 local wezterm = require 'wezterm'
 local prefs = require 'custom.preferences'
 
 local M = {}
+
+local STATE_DIR = (os.getenv('XDG_DATA_HOME') or (os.getenv('HOME') .. '/.local/share')) .. '/wezterm'
+M.STATE_FILE = STATE_DIR .. '/font' -- "family\tsize"
+M.DOWNLOAD_DIR = STATE_DIR .. '/fonts' -- Nerd Fonts fetched by the picker
+os.execute('mkdir -p "' .. M.DOWNLOAD_DIR .. '"')
+
+-- Family and size in use: the picker's choice, else custom/preferences.lua
+function M.current()
+  local family, size = prefs.font, prefs.size
+  local f = io.open(M.STATE_FILE, 'r')
+  if f then
+    local saved_family, saved_size = (f:read('*l') or ''):match('^([^\t]+)\t(%d+%.?%d*)$')
+    f:close()
+    if saved_family then family, size = saved_family, tonumber(saved_size) end
+  end
+  return family, size
+end
 
 -- Hack only ships 400 and 700; asking for another weight works on recent
 -- WezTerm (closest match) but older builds show an error, so snap it here.
@@ -13,9 +31,9 @@ local function snap(family, weight)
   return weight
 end
 
-local function font(weight, italic)
+local function font(family, weight, italic)
   return wezterm.font_with_fallback({
-    { family = prefs.font, weight = snap(prefs.font, weight), italic = italic or false },
+    { family = family, weight = snap(family, weight), italic = italic or false },
     { family = 'Hack Nerd Font Mono', weight = snap('Hack', weight), italic = italic or false },
   })
 end
@@ -23,18 +41,20 @@ end
 function M.apply(config)
   wezterm.add_to_config_reload_watch_list(wezterm.config_dir .. '/lua/custom/preferences.lua')
 
-  -- Bundled Hack Nerd Font Mono: works without installing it on the system
-  config.font_dirs = { wezterm.config_dir .. '/fonts' }
+  -- Bundled Hack Nerd Font Mono: works without installing it on the system.
+  -- The picker's downloads work the same way.
+  config.font_dirs = { wezterm.config_dir .. '/fonts', M.DOWNLOAD_DIR }
 
-  config.font = font(prefs.weight_normal)
+  local family, size = M.current()
+  config.font = font(family, prefs.weight_normal)
   config.font_rules = {
-    { intensity = 'Bold', italic = false, font = font(prefs.weight_bold) },
-    { intensity = 'Bold', italic = true, font = font(prefs.weight_bold, true) },
-    { intensity = 'Normal', italic = true, font = font(prefs.weight_normal, true) },
-    { intensity = 'Half', italic = false, font = font(400) },
-    { intensity = 'Half', italic = true, font = font(400, true) },
+    { intensity = 'Bold', italic = false, font = font(family, prefs.weight_bold) },
+    { intensity = 'Bold', italic = true, font = font(family, prefs.weight_bold, true) },
+    { intensity = 'Normal', italic = true, font = font(family, prefs.weight_normal, true) },
+    { intensity = 'Half', italic = false, font = font(family, 400) },
+    { intensity = 'Half', italic = true, font = font(family, 400, true) },
   }
-  config.font_size = prefs.size
+  config.font_size = size
   config.line_height = prefs.line_height
   config.bold_brightens_ansi_colors = true
 end

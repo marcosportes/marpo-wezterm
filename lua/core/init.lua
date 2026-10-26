@@ -23,6 +23,7 @@ local plugins = {
   'plugins.notify',
   'plugins.spinner',
   'plugins.theme',
+  'plugins.font',
   'plugins.help',
   'plugins.update',
 }

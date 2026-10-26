@@ -3,7 +3,8 @@
 -- ============================================
 -- Feature-specific keys live with their feature:
 --   F2 / Shift+F2 -> plugins/tabs.lua · Alt+S -> plugins/session.lua
---   Ctrl+Shift+T -> plugins/theme.lua · Alt+H -> plugins/help.lua
+--   Ctrl+Shift+T -> plugins/theme.lua · Ctrl+Shift+F -> plugins/font.lua
+--   Alt+H -> plugins/help.lua
 local wezterm = require 'wezterm'
 local act = wezterm.action
 local ssh = require 'plugins.ssh'
@@ -121,7 +122,7 @@ function M.apply(config)
     key('ALT', 'c', copy_screen()),
 
     -- ===== SEARCH =====
-    key('CTRL|SHIFT', 'f', act.Search 'CurrentSelectionOrEmptyString'),
+    key('ALT', 'f', act.Search 'CurrentSelectionOrEmptyString'),
 
     -- ===== CLEAR SCREEN =====
     key('ALT', 'k', act.ClearScrollback 'ScrollbackAndViewport'),

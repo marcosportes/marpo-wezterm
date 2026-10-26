@@ -32,7 +32,7 @@
 | `Alt+C` | Copy the whole visible screen of the pane (no tab bar or footer; works with vim over SSH) |
 | Right click | Paste |
 | `Ctrl+Click` | Open link |
-| `Ctrl+Shift+F` | Search in terminal |
+| `Alt+F` | Search in terminal |
 | `Alt+K` | Clear screen and scrollback |
 | `Ctrl++` / `Ctrl+-` / `Ctrl+0` | Increase / decrease / reset font size |
 | `F11` | Toggle full screen |
@@ -44,13 +44,17 @@
 | `Alt+S` | Save session now (it already saves every 10 s) |
 | `Ctrl+Shift+R` | Reload config |
 
-## Theme
+## Theme and font
 | Shortcut | Action |
 |---|---|
 | `Ctrl+Shift+T` | Theme list: Gruvbox (default), Dracula, Nord, Wonokai, One Dark, Ayu, Everforest |
+| `Ctrl+Shift+F` | Font list (Nerd Fonts: Hack, JetBrains Mono, Fira Code, Meslo, Cascadia, …) and font size |
 | `Alt+H` | Shortcut list: every command and a one-line description |
 
 The chosen theme is stored in `~/.local/share/wezterm/theme` and applies to every window.
+The chosen font and size are stored in `~/.local/share/wezterm/font` and win over
+`lua/custom/preferences.lua`. Fonts other than the bundled Hack are downloaded from the
+Nerd Fonts release the first time they are picked, into `~/.local/share/wezterm/fonts`.
 
 ## Updates
 Each time WezTerm starts it checks GitHub once. If origin is ahead of the last
@@ -123,6 +127,7 @@ lua/
     notify.lua              notification + tab icon on bell in background tabs
     spinner.lua             spinner on busy tabs, 󰌌 + notification when waiting for input
     theme.lua               Ctrl+Shift+T theme list
+    font.lua                Ctrl+Shift+F font and size list, downloads Nerd Fonts
     help.lua                Alt+H shortcut list
     update.lua              startup check for a newer version on GitHub
 scripts/
@@ -131,6 +136,7 @@ scripts/
   local-footer.sh           draws the local footer (CPU, RAM, disk, network)
   footer-fit.sh             shrinks the footers to the window width
   wezterm-usage.sh          WezTerm's own CPU/RAM, at the far right of the footers
+  font-install.sh           downloads a Nerd Font for the Ctrl+Shift+F list
   check-update.sh           compares the installed commit with GitHub
   apply-update.sh           runs setup.sh when the update prompt is accepted
 ```

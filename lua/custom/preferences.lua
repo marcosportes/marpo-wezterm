@@ -3,6 +3,7 @@
 -- ============================================
 return {
   -- Font family (list installed ones with: fc-list : family | sort -u)
+  -- Font and size picked with Ctrl+Shift+F win over these two.
   font = 'Hack Nerd Font Mono',
 
   -- Font size

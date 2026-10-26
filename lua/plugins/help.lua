@@ -12,6 +12,7 @@ local KEY_WIDTH = 18
 local commands = {
   { 'Alt+H', 'Show this list' },
   { 'Ctrl+Shift+T', 'Change the color theme' },
+  { 'Ctrl+Shift+F', 'Change the font and its size' },
   { 'Alt+X', 'SSH host picker' },
   { 'Alt+L', 'Launch menu' },
   { 'Alt+T', 'New tab' },
@@ -35,7 +36,7 @@ local commands = {
   { 'Alt+C', 'Copy the visible screen' },
   { 'Right click', 'Paste' },
   { 'Ctrl+Click', 'Open the link under the cursor' },
-  { 'Ctrl+Shift+F', 'Search in the terminal' },
+  { 'Alt+F', 'Search in the terminal' },
   { 'Alt+K', 'Clear the screen and scrollback' },
   { 'Ctrl++ / Ctrl+-', 'Increase or decrease the font' },
   { 'Ctrl+0', 'Reset the font size' },
