@@ -68,7 +68,7 @@ On startup WezTerm restores windows, tabs, splits, directories, tab names/colors
 and SSH connections (file: `~/.local/share/wezterm/session.json`).
 
 ## When SSH drops
-Tabs opened with `Alt+X` show: **Enter** reconnect · **s** local shell · **q** close tab.
+Tabs opened with `Alt+X` show: **Enter** reconnect · **q** close tab.
 
 ## SSH footer
 Every SSH tab gets a 1-row footer at the bottom with host, user@IP:port, time

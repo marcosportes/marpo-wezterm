@@ -3,6 +3,11 @@
 # Usage: ssh-reconnect.sh [--lazy] [ssh] <ssh arguments...>
 #   --lazy: wait for Enter before connecting (session restore sends it when
 #           the tab is selected, so background tabs don't ask for passphrases)
+
+# Ctrl+C stops ssh (a trap, unlike ignoring it, doesn't reach child processes)
+# but must not kill this script: that would close the tab
+trap : INT
+
 if [ "$1" = "--lazy" ]; then
   shift
   [ "$1" = "ssh" ] && shift
@@ -28,11 +33,10 @@ while true; do
 
   echo
   printf '\e[1;31m● Connection closed (exit code %s)\e[0m\n' "$code"
-  printf '  \e[1m[Enter]\e[0m reconnect   \e[1m[s]\e[0m local shell   \e[1m[q]\e[0m close tab\n'
+  printf '  \e[1m[Enter]\e[0m reconnect   \e[1m[q]\e[0m close tab\n'
   read -rsn1 key
   case "$key" in
     q|Q) exit "$code" ;;
-    s|S) exec "${SHELL:-/bin/zsh}" -l ;;
   esac
   echo "Reconnecting..."
 done
